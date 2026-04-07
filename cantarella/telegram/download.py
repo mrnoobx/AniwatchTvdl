@@ -1,7 +1,6 @@
 #@cantarellabots
 from pyrogram.enums import ParseMode
 from pyrogram import Client
-from pyrogram.errors import FloodWait
 from queue import Queue, Empty
 from threading import Thread
 import asyncio
@@ -13,7 +12,7 @@ from cantarella.core.images import get_random_image
 from cantarella.core.database import db
 from config import LOG_CHANNEL
 
-#@cantarellabots
+
 async def schedule_deletion(client: Client, chat_id: int, message_id: int, delay: int, notify_msg_id: int = None):
     """Wait for 'delay' seconds, then delete the specified message(s)."""
     await asyncio.sleep(delay)
@@ -40,10 +39,10 @@ def _make_progress_bar(percent: float, length: int = 10) -> str:
 
 async def _handle_download(client: Client, message, url, status_msg, is_playlist=False, quality="auto", chat_id=None, name_override=None, season_override=None, ep_num_override=None):
     if chat_id is None:
-        chat_id = message.chat.id
+        chat_id = message.chat.id if message else status_msg.chat.id
 
     # The user's original chat for user-side progress
-    user_chat_id = message.chat.id
+    user_chat_id = message.chat.id if message else None
 
     # Progress is always reported in LOG_CHANNEL if set, otherwise original chat_id
     progress_chat_id = int(LOG_CHANNEL) if LOG_CHANNEL else chat_id
@@ -55,19 +54,23 @@ async def _handle_download(client: Client, message, url, status_msg, is_playlist
 
     # ── Create a user-side progress message ──
     user_progress_msg = None
-    try:
-        user_progress_msg = await client.send_message(
-            user_chat_id,
-            text=f"<blockquote>⏳ <b><i>ʏᴏᴜʀ ᴅᴏᴡɴʟᴏᴀᴅ ɪꜱ ǫᴜᴇᴜᴇᴅ...</i></b>\n\n<b>{name_override or 'Anime Episode'}</b>\nǫᴜᴀʟɪᴛʏ: {quality}</blockquote>",
-            parse_mode=ParseMode.HTML
-        )
-    except Exception:
-        pass
+    if user_chat_id:
+        try:
+            user_progress_msg = await client.send_message(
+                user_chat_id,
+                text=f"<blockquote>⏳ <b><i>ʏᴏᴜʀ ᴅᴏᴡɴʟᴏᴀᴅ ɪꜱ ǫᴜᴇᴜᴇᴅ...</i></b>\n\n<b>{name_override or 'Anime Episode'}</b>\nǫᴜᴀʟɪᴛʏ: {quality}</blockquote>",
+                parse_mode=ParseMode.HTML
+            )
+        except Exception:
+            pass
 
 
     # Inform the user if the task is waiting in the queue
     if download_semaphore.locked():
-        await client.edit_message_text(progress_chat_id, status_msg.id, f"<blockquote>⏳ **ᴡᴀɪᴛɪɴɢ ɪɴ ǫᴜᴇᴜᴇ...**\nᴀɴɪᴍᴇ: {name_override or url}\nǫᴜᴀʟɪᴛʏ: {quality}</blockquote>", parse_mode=ParseMode.HTML)
+        try:
+            await client.edit_message_text(progress_chat_id, status_msg.id, f"<blockquote>⏳ **ᴡᴀɪᴛɪɴɢ ɪɴ ǫᴜᴇᴜᴇ...**\nᴀɴɪᴍᴇ: {name_override or url}\nǫᴜᴀʟɪᴛʏ: {quality}</blockquote>", parse_mode=ParseMode.HTML)
+        except Exception:
+            pass
         if user_progress_msg:
             try:
                 await client.edit_message_text(
@@ -79,7 +82,10 @@ async def _handle_download(client: Client, message, url, status_msg, is_playlist
                 pass
 
     async with download_semaphore:
-        await client.edit_message_text(progress_chat_id, status_msg.id, f"<blockquote>🔄 **ᴘʀᴏᴄᴇꜱꜱɪɴɢ ꜱᴛᴀʀᴛᴇᴅ...**\nᴀɴɪᴍᴇ: {name_override or url}</blockquote>", parse_mode=ParseMode.HTML)
+        try:
+            await client.edit_message_text(progress_chat_id, status_msg.id, f"<blockquote>🔄 **ᴘʀᴏᴄᴇꜱꜱɪɴɢ ꜱᴛᴀʀᴛᴇᴅ...**\nᴀɴɪᴍᴇ: {name_override or url}</blockquote>", parse_mode=ParseMode.HTML)
+        except Exception:
+            pass
         return await __handle_download_internal(client, message, url, status_msg, is_playlist, quality, chat_id, progress_chat_id, name_override, season_override, ep_num_override, user_chat_id, user_progress_msg)
 
 
@@ -181,7 +187,10 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
         except Exception as e:
 
             upload_q.put({'upload_error': str(e)})
-            await client.send_message(progress_chat_id, f"<blockquote>❌ ᴜᴘʟᴏᴀᴅ ғᴀɪʟᴇᴅ ғᴏʀ {title}: {str(e)}</blockquote>", parse_mode=ParseMode.HTML)
+            try:
+                await client.send_message(progress_chat_id, f"<blockquote>❌ ᴜᴘʟᴏᴀᴅ ғᴀɪʟᴇᴅ ғᴏʀ {title}: {str(e)}</blockquote>", parse_mode=ParseMode.HTML)
+            except Exception:
+                pass
         finally:
             active_uploads[0] -= 1
             try:
@@ -303,18 +312,16 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
 
             # Update LOG_CHANNEL
 
-            if text and text != last_text and (now - last_edit_time) > 5.0:
+            if text and text != last_text and (now - last_edit_time) > 2.5:
                 try:
                     await client.edit_message_text(progress_chat_id, status_msg.id, text, parse_mode=ParseMode.HTML)
                     last_text = text
                     last_edit_time = now
-                except FloodWait as e:
-                    last_edit_time = now + e.value
                 except Exception:
                     pass
 
             # Update user-side progress text
-            if user_progress_msg and user_text and user_text != last_user_text and (now - last_user_edit_time) > 5.0:
+            if user_progress_msg and user_text and user_text != last_user_text and (now - last_user_edit_time) > 3:
                 try:
                     await client.edit_message_text(
                         user_chat_id, user_progress_msg.id,
@@ -323,8 +330,6 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
                     )
                     last_user_text = user_text
                     last_user_edit_time = now
-                except FloodWait as e:
-                    last_user_edit_time = now + e.value
                 except Exception:
                     pass
 
@@ -341,11 +346,14 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
         suffix = ""
         if error[0]:
             suffix = f"\n⚠️ ɴᴏᴛᴇ: ᴅᴏᴡɴʟᴏᴀᴅ ʜᴀᴅ ᴇʀʀᴏʀꜱ ʙᴜᴛ {len(uploaded_messages)} {unit_sc} ᴡᴇʀᴇ ꜱᴀᴠᴇᴅ."
-        await client.edit_message_text(
-            progress_chat_id, status_msg.id,
-            f"<blockquote>✅ **ᴅᴏᴡɴʟᴏᴀᴅ & ᴜᴘʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ!**\nᴜᴘʟᴏᴀᴅᴇᴅ {len(uploaded_messages)} {unit_sc} ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ.{suffix}</blockquote>",
-            parse_mode=ParseMode.HTML
-        )
+        try:
+            await client.edit_message_text(
+                progress_chat_id, status_msg.id,
+                f"<blockquote>✅ **ᴅᴏᴡɴʟᴏᴀᴅ & ᴜᴘʟᴏᴀᴅ ᴄᴏᴍᴘʟᴇᴛᴇ!**\nᴜᴘʟᴏᴀᴅᴇᴅ {len(uploaded_messages)} {unit_sc} ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ.{suffix}</blockquote>",
+                parse_mode=ParseMode.HTML
+            )
+        except Exception:
+            pass
         # User-side final
         if user_progress_msg:
             try:
@@ -359,7 +367,10 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
             except Exception:
                 pass
     elif error[0]:
-        await client.edit_message_text(progress_chat_id, status_msg.id, f"<blockquote>❌ ᴅᴏᴡɴʟᴏᴀᴅ ᴇʀʀᴏʀ: {error[0]}</blockquote>", parse_mode=ParseMode.HTML)
+        try:
+            await client.edit_message_text(progress_chat_id, status_msg.id, f"<blockquote>❌ ᴅᴏᴡɴʟᴏᴀᴅ ᴇʀʀᴏʀ: {error[0]}</blockquote>", parse_mode=ParseMode.HTML)
+        except Exception:
+            pass
         if user_progress_msg:
             try:
                 await client.edit_message_text(
@@ -370,7 +381,10 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
             except Exception:
                 pass
     else:
-        await client.edit_message_text(progress_chat_id, status_msg.id, "<blockquote>❌ ɴᴏ ғɪʟᴇꜱ ᴡᴇʀᴇ ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ ᴜᴘʟᴏᴀᴅᴇᴅ.</blockquote>", parse_mode=ParseMode.HTML)
+        try:
+            await client.edit_message_text(progress_chat_id, status_msg.id, "<blockquote>❌ ɴᴏ ғɪʟᴇꜱ ᴡᴇʀᴇ ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ ᴜᴘʟᴏᴀᴅᴇᴅ.</blockquote>", parse_mode=ParseMode.HTML)
+        except Exception:
+            pass
         if user_progress_msg:
             try:
                 await client.edit_message_text(

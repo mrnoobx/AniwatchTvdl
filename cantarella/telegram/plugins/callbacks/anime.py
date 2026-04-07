@@ -8,7 +8,7 @@ from cantarella.button import Button as InlineKeyboardButton
 from cantarella.core.state import user_episodes, user_search_results
 from config import *
 from .helpers import check_fsub, send_fsub_prompt
-#@cantarellabots
+
 # ─────────────────────────────────────────────
 #  Anime select & episode pagination
 # ─────────────────────────────────────────────

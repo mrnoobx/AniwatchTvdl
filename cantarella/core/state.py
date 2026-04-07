@@ -5,4 +5,4 @@ user_episodes = {} # user_id -> {'anime_title': title, 'episodes': [...], 'url':
 user_search_results = {} # user_id -> search_results
 
 # ── Ongoing auto-download toggle ──
-ongoing_enabled = False # Can be toggled via /settings
+# Note: ongoing_enabled state is now managed via database: `await db.get_user_setting(0, "ongoing_enabled", False)`

@@ -1,6 +1,7 @@
 #@cantarellabots
 from pyrogram.enums import ParseMode
 from pyrogram import Client
+from pyrogram.errors import FloodWait
 from queue import Queue, Empty
 from threading import Thread
 import asyncio
@@ -12,7 +13,7 @@ from cantarella.core.images import get_random_image
 from cantarella.core.database import db
 from config import LOG_CHANNEL
 
-
+#@cantarellabots
 async def schedule_deletion(client: Client, chat_id: int, message_id: int, delay: int, notify_msg_id: int = None):
     """Wait for 'delay' seconds, then delete the specified message(s)."""
     await asyncio.sleep(delay)
@@ -302,16 +303,18 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
 
             # Update LOG_CHANNEL
 
-            if text and text != last_text and (now - last_edit_time) > 2.5:
+            if text and text != last_text and (now - last_edit_time) > 5.0:
                 try:
                     await client.edit_message_text(progress_chat_id, status_msg.id, text, parse_mode=ParseMode.HTML)
                     last_text = text
                     last_edit_time = now
+                except FloodWait as e:
+                    last_edit_time = now + e.value
                 except Exception:
                     pass
 
             # Update user-side progress text
-            if user_progress_msg and user_text and user_text != last_user_text and (now - last_user_edit_time) > 3:
+            if user_progress_msg and user_text and user_text != last_user_text and (now - last_user_edit_time) > 5.0:
                 try:
                     await client.edit_message_text(
                         user_chat_id, user_progress_msg.id,
@@ -320,6 +323,8 @@ async def __handle_download_internal(client: Client, message, url, status_msg, i
                     )
                     last_user_text = user_text
                     last_user_edit_time = now
+                except FloodWait as e:
+                    last_user_edit_time = now + e.value
                 except Exception:
                     pass
 

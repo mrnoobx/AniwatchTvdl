@@ -1,3 +1,4 @@
+#@cantarellabots
 from pyrogram.enums import ParseMode
 from cantarella.core.proxy import get_random_proxy, get_proxy_dict
 import asyncio
@@ -13,7 +14,7 @@ from cantarella.core.database import db
 from cantarella.telegram.pages import post_to_main_channel
 from cantarella.core.anilist import TextEditor
 from config import SET_INTERVAL, TARGET_CHAT_ID, MAIN_CHANNEL, LOG_CHANNEL
-
+#@cantarellabots
 BASE_URL = "https://aniwatchtv.to"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -119,10 +120,7 @@ def fetch_recently_updated():
         print(f"Error fetching recently updated: {e}")
         return []
 
-first_run = True
-
 async def check_and_download_ongoing(client: Client, chat_id: int):
-    global first_run
     print("Checking for recently updated anime...")
     recent_animes = await asyncio.to_thread(fetch_recently_updated)
 
@@ -131,10 +129,6 @@ async def check_and_download_ongoing(client: Client, chat_id: int):
     # 0. Fetch the schedule to ONLY process scheduled anime
     scheduled_data = await asyncio.to_thread(fetch_schedule_list)
     scheduled_ids = {item['id'] for item in scheduled_data}
-
-    # To demonstrate it works immediately, we will allow the VERY FIRST anime in the list to be downloaded
-    # on the first run, but mark the rest as processed to avoid spam.
-    first_run_downloaded = False
 
     for idx, anime in enumerate(recent_animes):
         try:
@@ -166,14 +160,6 @@ async def check_and_download_ongoing(client: Client, chat_id: int):
                     await db.mark_processed(ep_identifier)
                 continue
 
-            if first_run:
-                # On the very first run, download only the 1st new anime to prove it's working
-                if not first_run_downloaded and idx == 0:
-                    first_run_downloaded = True
-                else:
-                    await db.mark_processed(ep_identifier)
-                    continue
-
             print(f"New episode found: {anime['title']} - {latest_ep.get('title', 'Unknown')}")
 
             # Clean title for better AniList searching (remove extra spaces)
@@ -187,8 +173,11 @@ async def check_and_download_ongoing(client: Client, chat_id: int):
             # 1. Strict Schedule check as requested
             is_scheduled = anime['id'] in scheduled_ids
 
-            if not is_scheduled:
-                print(f"⏭️ Skipping unscheduled anime: {anime['title']}")
+            country_of_origin = data.get("countryOfOrigin", "")
+            is_chinese = country_of_origin == "CN"
+
+            if is_chinese and not is_scheduled:
+                print(f"⏭️ Skipping unscheduled Chinese anime (Donghua): {anime['title']}")
                 await db.mark_processed(ep_identifier)
                 continue
 
@@ -281,10 +270,6 @@ async def check_and_download_ongoing(client: Client, chat_id: int):
         except Exception as e:
             print(f"Error processing {anime['title']}: {e}")
 
-    if first_run:
-        print("Initial fetch complete. Listening for new episodes...")
-        first_run = False
-
 async def ongoing_task(client: Client):
     if not TARGET_CHAT_ID:
         print("WARNING: TARGET_CHAT_ID is not set in environment or config.py. Ongoing auto-downloads are disabled.")
@@ -299,7 +284,7 @@ async def ongoing_task(client: Client):
     print(f"Starting ongoing checker. Interval: {SET_INTERVAL}s, Target Chat: {target_chat_id}")
 
     while True:
-        from cantarella.core.state import ongoing_enabled
+        ongoing_enabled = await db.get_user_setting(0, "ongoing_enabled", False)
         if ongoing_enabled:
             try:
                 await check_and_download_ongoing(client, target_chat_id)
@@ -309,3 +294,4 @@ async def ongoing_task(client: Client):
             pass  # Paused via /settings, loop stays alive
 
         await asyncio.sleep(SET_INTERVAL)
+

@@ -7,7 +7,7 @@ import re
 
 # Simple cache for AniList data
 ani_cache = {}
-#@cantarellabots
+
 # Dummy reporting utility
 class Report:
     async def report(self, message, level="info", log=True):
@@ -42,7 +42,7 @@ CAPTION_FORMAT = """
 ➥ Gᴇɴʀᴇs:- {genres}
 ➥ Aᴜᴅɪᴏ:- {audio}</i></blockquote>
 <b>✦━━━━━━━━━━━━━━━━━━━━━━━━✦</b>
-<b><i>⌬ Pᴏᴡᴇʀᴇᴅ ʙʏ:- @cantarellabots</i></b>
+<b><i>⌬ Pᴏᴡᴇʀᴇᴅ ʙʏ:- @Animeworld_zone</i></b>
 """
 
 GENRES_EMOJI = {

@@ -1,3 +1,4 @@
+#@cantarellabots
 from cantarella.core.proxy import get_random_proxy, get_proxy_dict
 from pathlib import Path
 from queue import Queue
@@ -326,7 +327,7 @@ class cantarellatvDownloader:
                 "--save-dir", str(task_dir),
                 "--save-name", save_name,
                 "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "-H", "Referer: https://megacloud.blog/",
+                "-H", "Referer: https://megacloud.tv/",
                 "--check-segments-count", "False",
                 "-mt",
                 "--thread-count", "50",

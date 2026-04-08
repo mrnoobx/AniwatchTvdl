@@ -10,7 +10,7 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "8732170391:AAHIm0_xvUCjePzRegZaK6crL_Px
 
 SET_INTERVAL = int(os.environ.get("SET_INTERVAL", 60))  # in seconds, default 1 hour
 TARGET_CHAT_ID = os.environ.get("TARGET_CHAT_ID", "-1003741006721")
-MAIN_CHANNEL = os.environ.get("MAIN_CHANNEL", "-1002310978225") # Change as needed
+MAIN_CHANNEL = os.environ.get("MAIN_CHANNEL", "-1003741006721) # Change as needed
 LOG_CHANNEL = os.environ.get("LOG_CHANNEL", "-1003703944362")
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb+srv://mrnoobx:DAZCdTczVWyECi04@cluster0.sedgwxy.mongodb.net/?retryWrites=true&w=majority")
 MONGO_NAME = os.environ.get("MONGO_NAME", "cantarellabots")

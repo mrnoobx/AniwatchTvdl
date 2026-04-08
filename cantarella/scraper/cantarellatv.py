@@ -20,7 +20,7 @@ class cantarellatvDownloader:
         self.download_path.mkdir(exist_ok=True)
         self.binary_path = self._get_binary_path()
         self.progress_queue = progress_queue or Queue()
-        self.base_url = "https://aniwatchtv.to"
+        self.base_url = "https://anizen.tr"
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }

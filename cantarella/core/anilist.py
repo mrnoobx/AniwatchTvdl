@@ -42,7 +42,7 @@ CAPTION_FORMAT = """
 ➥ Gᴇɴʀᴇs:- {genres}
 ➥ Aᴜᴅɪᴏ:- {audio}</i></blockquote>
 <b>✦━━━━━━━━━━━━━━━━━━━━━━━━✦</b>
-<b><i>⌬ Pᴏᴡᴇʀᴇᴅ ʙʏ:- @Animeworld_zone</i></b>
+<b><i>⌬ Pᴏᴡᴇʀᴇᴅ ʙʏ:- @animeworld_zor</i></b>
 """
 
 GENRES_EMOJI = {

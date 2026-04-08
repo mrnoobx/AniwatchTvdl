@@ -78,7 +78,7 @@ class Megacloud:
                 session.proxies.update(proxy_dict)
 
             headers = self.headers.copy()
-            headers["referer"] = "https://aniwatchtv.to/"
+            headers["referer"] = "https://anizen.tr/"
 
             # Prefer megacloud.tv over megacloud.blog
             curr_embed_url = self.embed_url.replace(".blog", ".tv")
